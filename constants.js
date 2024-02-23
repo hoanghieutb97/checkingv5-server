@@ -12,6 +12,8 @@ const KeyAndApi = {
     gllm: 'https://sheet.best/api/sheets/e8876c80-1778-414d-ae68-af6b9ec1289c',
     listRunDone: "65d461446ba45af7d047e0b5",
     listRunErr: "659802d136aaf9f9db745e0c",
+    Label_fail_sheet: "65d4730f4b50dd1077c42b5e",
+    Label_fail_FIleDesign: "65d7111795677e07dd801973",
     listArchive: "65d48349181acc584b21736d",
     startList: "659392077c1ff60559669e1f",
     serverFile: "\\\\192.168.1.240\\in",

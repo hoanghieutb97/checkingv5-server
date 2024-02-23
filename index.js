@@ -22,26 +22,14 @@ const addDateImage = require('./XuLyTrello/addDateImage');
 
 const fs = require('fs').promises;
 const { KeyAndApi } = require('./constants');
+const checkAwaitPhotoshop = require('./fetchClient/checkAwaitPhotoshop');
+const runScriptTool = require('./fetchClient/runScriptTool');
+const cal_newIPClient = require('./calFunctionServer/cal_newIPClient');
 
 global.listIP = [];
 global.listTrello = [];
 app.post('/Ipclient', (req, res) => {
-
-    { // cap nhat trang thai cua list ip
-        let isDuplicate = false; // Biến để kiểm tra xem có item trùng IP không
-
-        for (let i = 0; i < listIP.length; i++) {
-            if (listIP[i].ip[0] === req.body.ip[0]) {
-                listIP[i] = { ...req.body };
-                isDuplicate = true;
-                break; // Thoát khỏi vòng lặp
-            }
-        }
-
-        if (!isDuplicate) { // them ip neu chua co
-            listIP.push({ ...req.body });
-        }
-    }
+    global.listIP = cal_newIPClient(global.listIP, req.body); // cập nhật listIP khi có req từ client
 
     if (global.listTrello.length > 0) {
         if ((req.body.cardId)) {
@@ -75,49 +63,39 @@ app.post('/Ipclient', (req, res) => {
             else {
                 console.log("move to run done !  ", req.body.cardId);
                 moveToRunDone(req.body.cardId);
-                axios.get(`http://${req.body.ip[0]}:4444/checkAwaitPhotoshop`);
+                checkAwaitPhotoshop(req.body.ip[0]);
+
             }
 
 
-        } else {
-            if ((req.body.state == "awaitReady")) { // chay script
-                let isBreak = false; // Biến cờ
-                for (let i = 0; i < listIP.length && !isBreak; i++) {
-                    if (listIP[i].ip[0] == req.body.ip[0]) {
+        } else if ((req.body.state == "awaitReady")) {
 
-                        for (let j = 0; j < global.listTrello.length; j++) {
-                            if (global.listTrello[j].state == "awaitReady") {
-                                global.listTrello[j].state = "busy";
-                                listIP[i] = { ...req.body, state: "busy" };
+            let isBreak = false; // Biến cờ
+            for (let i = 0; i < listIP.length && !isBreak; i++) {
+                if (listIP[i].ip[0] == req.body.ip[0]) {
+                    for (let j = 0; j < global.listTrello.length; j++) {
+                        if (global.listTrello[j].state == "awaitReady") {
+                            global.listTrello[j].state = "busy";
+                            listIP[i] = { ...req.body, state: "busy" };
 
-                                chayscript(listIP[i], { ...global.listTrello[j].json, cardId: global.listTrello[j].cardId });
-                                isBreak = true; // Đặt cờ
-                                break; // Thoát khỏi vòng lặp trong
+                            var JSONFILE = { ...global.listTrello[j].json, cardId: global.listTrello[j].cardId }
+                            var runsc = runScriptTool(listIP[i].ip[0], JSONFILE);
+                            if (!runsc) {
+                                var newListTrello = cal_ArrayDeleteCardId(global.listTrello[j].cardId, global.listTrello);
+                                global.listTrello = newListTrello;
                             }
+                            isBreak = true; // Đặt cờ
+                            break; // Thoát khỏi vòng lặp trong
                         }
-
                     }
 
                 }
-
             }
         }
 
     }
 
 
-
-    function chayscript(listIP, JSONFILE) {
-        var ip = listIP.ip[0]
-
-        const url = `http://${ip}:4444/photoshopScriptTrello`;
-        axios.post(url, JSONFILE, {
-            headers: { 'Content-Type': 'application/json' }
-        })
-            .then(response => { console.log(response.data) }) // Axios tự động chuyển đổi JSON
-            .catch(err => console.error('Error:', err));
-
-    }
 
 
 
@@ -186,15 +164,8 @@ app.post('/webhook/trello', (req, res) => {
                         for (let i = 0; i < listIP.length; i++) {
                             if (listIP[i].state == "awaitReady") {
                                 listIP[i].state == "busy";
-                                const url = `http://${listIP[i].ip[0]}:4444/checkAwaitPhotoshop`;
-                                axios.get(url).then(function (response) {
-                                    // Xử lý thành công
+                                checkAwaitPhotoshop(listIP[i].ip[0]);
 
-
-                                })
-                                    .catch(function (error) {
-                                        console.log("loi checkAwaitPhotoshop", error);
-                                    })
 
                                 break;
                             }
