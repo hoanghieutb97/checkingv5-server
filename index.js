@@ -19,6 +19,8 @@ const tachState = require('./calFunctionExcel/tachState');
 const moveToRunDone = require('./XuLyTrello/moveToRunDone');
 const addDescriptions = require('./XuLyTrello/addDescriptions');
 const addDateImage = require('./XuLyTrello/addDateImage');
+const addLabel_SheetFail = require('./XuLyTrello/addLabel_SheetFail');
+const moveToListError = require('./XuLyTrello/moveToListError');
 
 const fs = require('fs').promises;
 const { KeyAndApi } = require('./constants');
@@ -156,7 +158,7 @@ app.post('/webhook/trello', (req, res) => {
                 }).then(JSONFILE => {
                     // console.trace(JSONFILE.value.items);
                     console.log("Trang thai chay tool: ", JSONFILE.stt);
-                    if (JSONFILE.stt) {
+                    if (JSONFILE.stt == 1) {
                         data = { ...data, json: JSONFILE.value, state: "awaitReady" }
 
                         listTrello = [...listTrello, data];
@@ -173,11 +175,15 @@ app.post('/webhook/trello', (req, res) => {
                         }
 
                     }
-                    else { //file json không đảm bảo thì kéo sang lỗi
+                    else if (JSONFILE.stt == 0) { //file json không đảm bảo thì kéo sang lỗi
                         tachState(JSONFILE.value.items, req.body.action.data.card.id);
 
                     }
+                    else if (JSONFILE.stt == 2) { //file json không đảm bảo thì kéo sang lỗi
+                        addLabel_SheetFail(req.body.action.data.card.id);
+                        moveToListError(req.body.action.data.card.id);
 
+                    }
 
                     const longText = JSONFILE.value.items.map(itemx => (itemx.orderId)).join("\n");
                     var url2 = `https://api.trello.com/1/cards/${req.body.action.data.card.id}/actions/comments?key=${KeyAndApi.apiKey}&token=${KeyAndApi.token}`

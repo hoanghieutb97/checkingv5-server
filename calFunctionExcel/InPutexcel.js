@@ -190,15 +190,21 @@ function checkungtoll(excel) {
     // console.log(state);
     var status = _.uniq(excel.map(item => item.status));
     // console.log(status);
-    if (state.length == 1 && status[0] == "1") return true
-    return false
+    if (state.length == 1 && status[0] == "1") return 1
+    return 0
 }
 
 
 
 async function InPutexcel(url) {
     var sheet = await FetchXLSX(url);
-    var gllm = await FetchGLLM()
+    var gllm = [];
+    try {
+        gllm = await FetchGLLM()
+    } catch (error) {
+        gllm = false
+    }
+    if (!gllm) return { stt: 2, value: [] }
     var excel = mapSheetGllm(sheet, gllm);
 
     excel = dupItemsExcel(excel);
