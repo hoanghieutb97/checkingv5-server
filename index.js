@@ -29,6 +29,7 @@ const cal_newIPClient = require('./calFunctionServer/cal_newIPClient');
 global.listIP = [];
 global.listTrello = [];
 app.post('/Ipclient', (req, res) => {
+    console.log("connect ip______ ", req.body.ip[0]);
     global.listIP = cal_newIPClient(global.listIP, req.body); // cập nhật listIP khi có req từ client
 
     if (global.listTrello.length > 0) {
