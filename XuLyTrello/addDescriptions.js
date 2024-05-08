@@ -3,6 +3,7 @@ const { KeyAndApi } = require('../constants');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const xulyLoiTrello = require('./xulyLoiTrello');
 const filePath = path.join(KeyAndApi.serverFolder, 'status.txt');
 function addDescriptions(cardId, descrpt) {
 
@@ -17,14 +18,8 @@ function addDescriptions(cardId, descrpt) {
     })
         .catch(function (error) {
             // Xử lý lỗi
-            const content = cardId + " :lỗi khi addDescriptions\n";
-            fs.appendFile(filePath, content, (err) => {
-                if (err) {
-                    console.error('Lỗi khi ghi file:', err);
-                } else {
-
-                }
-            });
+            // xulyLoiTrello("addDescriptions", cardId, descrpt)
+            
         })
         .then(function () {
             // Luôn được thực thi

@@ -12,15 +12,14 @@ const port = 3010;
 app.use(cors()); // Sử dụng CORS middleware
 const bodyParser = require('body-parser');
 app.use(bodyParser.json()); // Cho phép xử lý JSON payload
-const InPutexcel = require('./calFunctionExcel/InPutexcel');
 const cal_ArrayDeleteCardId = require('./calFunctionServer/cal_ArrayDeleteCardId');
 const cal_getLinkFileTool = require('./calFunctionServer/cal_getLinkFileTool');
-const tachState = require('./calFunctionExcel/tachState');
 const moveToRunDone = require('./XuLyTrello/moveToRunDone');
 const addDescriptions = require('./XuLyTrello/addDescriptions');
-const addDateImage = require('./XuLyTrello/addDateImage');
-const addLabel_SheetFail = require('./XuLyTrello/addLabel_SheetFail');
-const moveToListError = require('./XuLyTrello/moveToListError');
+const webHookTrello = require('./XuLyTrello/webHookTrello');
+const checkCreateCard = require('./XuLyTrello/checkCreateCard');
+
+
 
 const fs = require('fs').promises;
 const { KeyAndApi } = require('./constants');
@@ -30,8 +29,105 @@ const cal_newIPClient = require('./calFunctionServer/cal_newIPClient');
 
 global.listIP = [];
 global.listTrello = [];
+checkCreateCard();  // xu ly loi up file va tao the
+getListTrelloAuto(); // xu ly lkoi ko chay tiep
+async function getListTrelloAuto() {
+    console.log("global.listTrello.length---------------", global.listTrello.length);
+    if (global.listTrello.length == 0)
+        axios.get(`https://api.trello.com/1/lists/${KeyAndApi.startList}/cards?key=${KeyAndApi.apiKey}&token=${KeyAndApi.token}`)
+            .then(async responseAll => {
+                global.listTrello = [];
+                let listCard = responseAll.data.map(item => ({ cardId: item.id, nameCard: item.name }));
+                console.log("listCard************ ", listCard.length);
+                var newLtCard = []
+                for (let i = 0; i < listCard.length; i++) {
+                    const url = `https://api.trello.com/1/cards/${listCard[i].cardId}/attachments?key=${KeyAndApi.apiKey}&token=${KeyAndApi.token}`;
+
+                    try {
+                        const response = (await axios.get(url)).data;
+
+                        for (let j = 0; j < response.length; j++) {
+                            var fileName = response[j].name;
+                            fileName = fileName.split(".").pop();
+                            if (fileName == "xlsx") newLtCard.push({
+                                cardId: listCard[i].cardId,
+                                url: response[j].url,
+                                nameCard: listCard[i].nameCard,
+                                sttDateImg: response.length == 1 ? true : false
+                            })
+                        }
+
+
+
+
+                    } catch (error) {
+
+                    }
+
+                }
+                function delay(time) {
+                    return new Promise(resolve => setTimeout(resolve, time));
+                }
+
+                // Hàm chính sử dụng vòng lặp và đợi
+                async function processCards(newLtCard) {
+                    for (let j = 0; j < newLtCard.length; j++) {
+                        await webHookTrello(newLtCard[j], newLtCard[j].sttDateImg);
+                        await delay(1000);
+                    }
+                }
+                processCards(newLtCard);
+            })
+            .catch(error => console.error('There was an error!', error));
+    setTimeout(getListTrelloAuto, 180000); // Thử lại sau 30 phút mặc định
+};
+
+app.post('/reactSendTrello', async (req, res) => {
+    global.listTrello = [];
+    var listCard = req.body.data;
+    var newLtCard = []
+    for (let i = 0; i < listCard.length; i++) {
+        const url = `https://api.trello.com/1/cards/${listCard[i].cardId}/attachments?key=${KeyAndApi.apiKey}&token=${KeyAndApi.token}`;
+
+        try {
+            const response = (await axios.get(url)).data;
+
+            for (let j = 0; j < response.length; j++) {
+                var fileName = response[j].name;
+                fileName = fileName.split(".").pop();
+                if (fileName == "xlsx") newLtCard.push({
+                    cardId: listCard[i].cardId,
+                    url: response[j].url,
+                    nameCard: listCard[i].nameCard,
+                    sttDateImg: response.length == 1 ? true : false
+                })
+            }
+
+
+
+
+        } catch (error) {
+
+        }
+
+    }
+    function delay(time) {
+        return new Promise(resolve => setTimeout(resolve, time));
+    }
+
+    // Hàm chính sử dụng vòng lặp và đợi
+    async function processCards(newLtCard) {
+        for (let j = 0; j < newLtCard.length; j++) {
+            await webHookTrello(newLtCard[j], newLtCard[j].sttDateImg);
+            await delay(1000);
+        }
+    }
+    processCards(newLtCard);
+    res.status(200).send('oke');
+});
+
 app.post('/Ipclient', (req, res) => {
-    console.log("connect ip______ ", req.body.ip[0]);
+    console.log("connect ip______ ", req.body.ip[0], "-", req.body.state, global.listTrello.length);
     global.listIP = cal_newIPClient(global.listIP, req.body); // cập nhật listIP khi có req từ client
 
     if (global.listTrello.length > 0) {
@@ -41,25 +137,26 @@ app.post('/Ipclient', (req, res) => {
                 var descrpt = cal_getLinkFileTool(req.body.cardId, global.listTrello);
                 if (descrpt) {
                     addDescriptions(req.body.cardId, descrpt);
-                    // addDateImage(req.body.cardId, descrpt);
                 }
                 var newListTrello = cal_ArrayDeleteCardId(req.body.cardId, global.listTrello);
                 global.listTrello = newListTrello;
             }
-
-
             if (req.body.err) { // nếu pts_status lỗi hoặc không thì xư lý
-                // listIP = listIP.map(item => {
-                //     if (item.ip[0] === req.body.ip[0]) return { ...req.body }
-                //     return item
-                // })
-
                 axios.put(`https://api.trello.com/1/cards/${req.body.cardId}`, {
                     idList: KeyAndApi.listRunErr,
                     key: KeyAndApi.apiKey,
                     token: KeyAndApi.token
                 })
-                axios.get(`http://${req.body.ip[0]}:4444/checkAwaitPhotoshop`);
+
+                axios.get(`http://${req.body.ip[0]}:4444/checkAwaitPhotoshop`)
+                    .then(response => {
+                        // Xử lý phản hồi ở đây
+                    })
+                    .catch(error => {
+                        // Xử lý lỗi ở đây
+                    });
+
+
 
 
             }
@@ -106,7 +203,7 @@ app.post('/Ipclient', (req, res) => {
 });
 
 // Thiết lập một endpoint để nhận webhook từ Trello
-app.post('/webhook/trello', (req, res) => {
+app.post('/webhook/trello', async (req, res) => {
 
 
 
@@ -116,88 +213,10 @@ app.post('/webhook/trello', (req, res) => {
             var data = {
                 url: req.body.action.data.attachment.url,
                 cardId: req.body.action.data.card.id,
-
+                nameCard: req.body.action.data.card.name
             };
 
-            // Cập nhật với thông tin API Key, Token và URL đính kèm cụ thể
-            const apiKey = KeyAndApi.apiKey;
-            const token = KeyAndApi.token;
-            const attachmentUrl = data.url;
-
-            // Thiết lập header cho request
-            const headers = {
-                "Authorization": `OAuth oauth_consumer_key="${apiKey}", oauth_token="${token}"`
-            };
-            const directoryPath = KeyAndApi.filePath;
-            // Thực hiện GET request để tải file
-
-            fetch(attachmentUrl, { headers: headers })
-                .then(response => {
-                    // Kiểm tra nếu response không thành công
-                    if (!response.ok) {
-                        throw new Error(`Error! status: ${response.status}`);
-                    }
-                    return response.buffer();
-                })
-                .then(buffer => {
-                    const fileName = attachmentUrl.split('/').pop();  // Lấy tên file từ URL
-                    const filePath = path.join(directoryPath, fileName); // Tạo đường dẫn đầy đủ
-                    return fs.writeFile(filePath, buffer).then(() => {
-                        console.log(`Đã tải và lưu attachment: ${filePath}`);
-                        return filePath; // Trả lại đường dẫn file cho chuỗi promise tiếp theo
-                    });
-
-
-
-
-                }).then(filePath => {
-                    // Sau khi ghi file hoàn tất, gọi InPutexcel
-
-                    return InPutexcel(filePath);
-
-                }).then(JSONFILE => {
-                    // console.trace(JSONFILE.value.items);
-                    console.log("Trang thai chay tool: ", JSONFILE.stt);
-                    if (JSONFILE.stt == 1) {
-                        data = { ...data, json: JSONFILE.value, state: "awaitReady" }
-
-                        listTrello = [...listTrello, data];
-
-
-                        for (let i = 0; i < listIP.length; i++) {
-                            if (listIP[i].state == "awaitReady") {
-                                listIP[i].state == "busy";
-                                checkAwaitPhotoshop(listIP[i].ip[0]);
-
-
-                                break;
-                            }
-                        }
-
-                    }
-                    else if (JSONFILE.stt == 0) { //file json không đảm bảo thì kéo sang lỗi
-                        tachState(JSONFILE.value.items, req.body.action.data.card.id);
-
-                    }
-                    else if (JSONFILE.stt == 2) { //file json không đảm bảo thì kéo sang lỗi
-                        addLabel_SheetFail(req.body.action.data.card.id);
-                        moveToListError(req.body.action.data.card.id);
-
-                    }
-
-                    const longText = JSONFILE.value.items.map(itemx => (itemx.orderId)).join("\n");
-                    var url2 = `https://api.trello.com/1/cards/${req.body.action.data.card.id}/actions/comments?key=${KeyAndApi.apiKey}&token=${KeyAndApi.token}`
-                    axios.post(url2, { text: longText + "\n" + req.body.action.data.card.id }, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        }
-                    })
-                    addDateImage(req.body.action.data.card.id, JSONFILE.value.items);
-                }
-                )
-                .catch(err => console.log('Có lỗi:', err));
-
+            await webHookTrello(data, true);
 
         }
     }

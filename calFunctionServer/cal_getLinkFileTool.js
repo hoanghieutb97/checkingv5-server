@@ -12,7 +12,7 @@ function cal_getLinkFileTool(cardId, array) {
         var type = itemc.json.type;
         var FileName = itemc.json.fileName.replace(/\..+$/, '');
         const linkFile = path.join(KeyAndApi.serverFile, type + "-" + FileName); // Tạo đường dẫn đầy đủ
-        console.log("descripttion.........", linkFile);
+        
         return linkFile
     } return false
 

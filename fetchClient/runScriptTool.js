@@ -5,6 +5,7 @@ const moveToListError = require('../XuLyTrello/moveToListError');
 
 
 async function runScriptTool(ip, JSONFILE) {
+    console.log(ip,"send : ",JSONFILE.fileName);
     const url = `http://${ip}:4444/runScriptTool`;
 
     try {
@@ -26,7 +27,7 @@ async function runScriptTool(ip, JSONFILE) {
 
         return true
     } catch (err) {
-
+console.log("err resppone /runScriptTool");
         return true
     }
 }

@@ -124,7 +124,7 @@ function dupItemsExcel(excel) {
         return acc;
     }, {});
 
-    newSheet = newSheet.map(item => ({ ...item, Quantity: orderIdCount[item.orderId] }));
+    newSheet = newSheet.map(item => ({ ...item, QuantityAll: orderIdCount[item.orderId] }));
 
     return newSheet;
 }
@@ -191,7 +191,8 @@ function checkungtoll(excel) {
     var status = _.uniq(excel.map(item => item.status));
     // console.log(status);
     if (state.length == 1 && status[0] == "1") return 1
-    return 0
+    else if (state.length != 1 && status[0] == "1") return 0
+    return 2
 }
 
 

@@ -3,6 +3,7 @@ const { KeyAndApi } = require('./../constants');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const xulyLoiTrello = require('./xulyLoiTrello');
 const filePath = path.join(KeyAndApi.serverFolder, 'status.txt');
 function moveToListError(cardId) {
     axios.put(`https://api.trello.com/1/cards/${cardId}`, {
@@ -11,23 +12,12 @@ function moveToListError(cardId) {
         token: KeyAndApi.token
     }).then(function (response) {
         // Xử lý thành công
-    
+
 
     })
         .catch(function (error) {
-           
-            const content = cardId + " :lỗi khi moveToListError\n";
-            fs.appendFile(filePath, content, (err) => {
-                if (err) {
-                    console.error('Lỗi khi ghi file:', err);
-                } else {
-                  
-                }
-            });
+            // xulyLoiTrello("moveToListError", cardId, "none")
         })
-        .then(function () {
-            // Luôn được thực thi
 
-        });
 }
 module.exports = moveToListError;
