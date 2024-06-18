@@ -132,7 +132,7 @@ function dupItemsExcel(excel) {
 function HAllAndWAll(product, HWAll) {
     var hAll = 1250;
     var wAll = 2440;
-    if (_.indexOf(HWAll.arrMica, product) !== (-1)) { hAll = 812; wAll = 1250 }
+    if (_.indexOf(HWAll.arrMica, product) !== (-1)) { hAll = 812; wAll = 1210 }
     else if (_.indexOf(HWAll.arrGo, product) !== (-1)) { hAll = 910; wAll = 910 }
     else if (_.indexOf(HWAll.arrMica2cm, product) !== (-1)) { hAll = 350; wAll = 2440 }
     else if (_.indexOf(HWAll.arrGoXXXXXX, product) !== (-1)) { hAll = 915; wAll = 915 }
@@ -167,7 +167,7 @@ function sortSheet(sheet) {
 
             }
             return _.flattenDeep(arr1)
-        }
+        } 
 
     }
     else

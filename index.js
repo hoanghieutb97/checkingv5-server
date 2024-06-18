@@ -32,8 +32,17 @@ global.listTrello = [];
 checkCreateCard();  // xu ly loi up file va tao the
 getListTrelloAuto(); // xu ly lkoi ko chay tiep
 async function getListTrelloAuto() {
+    var checkstt = false;
     console.log("global.listTrello.length---------------", global.listTrello.length);
-    if (global.listTrello.length == 0)
+    var StateListtrello = global.listTrello.map(item => item.state);
+    StateListtrello = [...new Set(StateListtrello)];
+
+    var StateListIP = global.listIP.map(item => item.state);
+    StateListIP = [...new Set(StateListIP)];
+
+    if ((StateListtrello.length == 1 && StateListtrello[0] == "busy") && (StateListIP.length == 1 && StateListIP[0] == "awaitReady")) checkstt = true
+
+    if (global.listTrello.length == 0 || checkstt)
         axios.get(`https://api.trello.com/1/lists/${KeyAndApi.startList}/cards?key=${KeyAndApi.apiKey}&token=${KeyAndApi.token}`)
             .then(async responseAll => {
                 global.listTrello = [];
@@ -73,13 +82,13 @@ async function getListTrelloAuto() {
                 async function processCards(newLtCard) {
                     for (let j = 0; j < newLtCard.length; j++) {
                         await webHookTrello(newLtCard[j], newLtCard[j].sttDateImg);
-                        await delay(1000);
+                        await delay(2000);
                     }
                 }
                 processCards(newLtCard);
             })
             .catch(error => console.error('There was an error!', error));
-    setTimeout(getListTrelloAuto, 180000); // Thử lại sau 30 phút mặc định
+    setTimeout(getListTrelloAuto, 540000); // Thử lại sau 30 phút mặc định
 };
 
 app.post('/reactSendTrello', async (req, res) => {
@@ -126,7 +135,7 @@ app.post('/reactSendTrello', async (req, res) => {
     res.status(200).send('oke');
 });
 
-app.post('/Ipclient', (req, res) => {
+app.post('/Ipclient', async (req, res) => {
     console.log("connect ip______ ", req.body.ip[0], "-", req.body.state, global.listTrello.length);
     global.listIP = cal_newIPClient(global.listIP, req.body); // cập nhật listIP khi có req từ client
 
@@ -135,20 +144,19 @@ app.post('/Ipclient', (req, res) => {
 
             { // xóa hàng chờ và thêm nội dung description vào trello
                 var descrpt = cal_getLinkFileTool(req.body.cardId, global.listTrello);
-                if (descrpt) {
-                    addDescriptions(req.body.cardId, descrpt);
-                }
+                if (descrpt) await addDescriptions(req.body.cardId, descrpt);
+
                 var newListTrello = cal_ArrayDeleteCardId(req.body.cardId, global.listTrello);
                 global.listTrello = newListTrello;
             }
             if (req.body.err) { // nếu pts_status lỗi hoặc không thì xư lý
-                axios.put(`https://api.trello.com/1/cards/${req.body.cardId}`, {
+                await axios.put(`https://api.trello.com/1/cards/${req.body.cardId}`, {
                     idList: KeyAndApi.listRunErr,
                     key: KeyAndApi.apiKey,
                     token: KeyAndApi.token
                 })
 
-                axios.get(`http://${req.body.ip[0]}:4444/checkAwaitPhotoshop`)
+                await axios.get(`http://${req.body.ip[0]}:4444/checkAwaitPhotoshop`)
                     .then(response => {
                         // Xử lý phản hồi ở đây
                     })
@@ -162,8 +170,8 @@ app.post('/Ipclient', (req, res) => {
             }
             else {
                 console.log("move to run done !  ", req.body.cardId);
-                moveToRunDone(req.body.cardId);
-                checkAwaitPhotoshop(req.body.ip[0]);
+                await moveToRunDone(req.body.cardId);
+                await checkAwaitPhotoshop(req.body.ip[0]);
 
             }
 
