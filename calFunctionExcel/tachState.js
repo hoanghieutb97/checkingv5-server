@@ -153,7 +153,6 @@ async function tachState(items, cardId, nameCard) {
     }
 
 
-
 }
 
 

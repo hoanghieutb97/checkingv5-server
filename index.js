@@ -18,7 +18,7 @@ const moveToRunDone = require('./XuLyTrello/moveToRunDone');
 const addDescriptions = require('./XuLyTrello/addDescriptions');
 const webHookTrello = require('./XuLyTrello/webHookTrello');
 const checkCreateCard = require('./XuLyTrello/checkCreateCard');
-
+const ngrok = require('ngrok');
 
 
 const fs = require('fs').promises;
@@ -90,7 +90,46 @@ async function getListTrelloAuto() {
             .catch(error => console.error('There was an error!', error));
     setTimeout(getListTrelloAuto, 540000); // Thử lại sau 30 phút mặc định
 };
+// Kết nối đến Ngrok
+async function startNgrok() {
+    const url = await ngrok.connect({
+        authtoken_from_env: true, // Sử dụng biến môi trường
+        proto: 'http', // http|tcp|tls
+        addr: 3010, // Port or network address
+        hostname: 'hoanghieusvtool.ngrok.pro', // Tên miền đã cấu hình trên Ngrok
+        region: 'us' // Chọn khu vực phù hợp
+    });
 
+    console.log('Ngrok Tunnel Created -> ', url);
+
+    // Cấu hình các thông tin cần thiết cho request
+    const apiKey = '4ab2789218e562d5eee1b5cc9c0a72f6';
+    const token = 'ATTAe7cd4c745f63ae54df2577566a5bc194802e80367f2327bb9259058ba41232162FEC0C48';
+    const callbackURL = 'hoanghieusvtool.ngrok.pro/webhook/trello';
+    const idModel = '65d98f40df4df16ca1acfa3f';
+
+    // Địa chỉ API để tạo webhook
+    const urlwebhooks = `https://api.trello.com/1/webhooks`;
+
+    const params = {
+        key: apiKey,
+        token: token,
+        callbackURL: callbackURL,
+        idModel: idModel,
+
+    };
+
+    
+    axios.post(urlwebhooks, params)
+        .then(response => {
+            console.log('Webhook Created:', response.data);
+        })
+        .catch(error => {
+            console.error('Error Creating Webhook:', error.response.data);
+        });
+}
+
+startNgrok();
 app.post('/reactSendTrello', async (req, res) => {
     global.listTrello = [];
     var listCard = req.body.data;

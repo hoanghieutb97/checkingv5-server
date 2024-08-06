@@ -40,7 +40,7 @@ const SortByProduct = {
         "PC silicon", "FatherDayZirror", "dia nhua", "mica DZT Style",
         "Photo Magnet", "Wooden Parterre", "photo frame lamp",
         "Custom Acrylic Name Night Light pine", "Led Light Wood Base TMZ",
-        " Wooden Picture Frame Magnet"
+        " Wooden Picture Frame Magnet","Custom 2 Layered Acrylic Keychain"
     ],
     nameId_orderId_sku: ["NEW transparent ORM 1M", "NEW transparent ORM 2M", "Leather Keychain", "2M Leather Keychain"]
 
@@ -71,8 +71,8 @@ const HWAll = {
 
     ],
     arrGo: ["wood orrnament 2layer",
-        "ornament go 1M-fill",
-        "ornament go 2M-fill",
+        "ornament go 1M-Singer",
+        "ornament go 2M-Singer",
         "ornament vong huong",
         "wood ornament dls",
         "wood fix ornament 2M", 
