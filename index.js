@@ -104,7 +104,7 @@ async function startNgrok() {
 
     // Cấu hình các thông tin cần thiết cho request
     const apiKey = '4ab2789218e562d5eee1b5cc9c0a72f6';
-    const token = 'ATTAe7cd4c745f63ae54df2577566a5bc194802e80367f2327bb9259058ba41232162FEC0C48';
+    const tokenX = 'ATTAe7cd4c745f63ae54df2577566a5bc194802e80367f2327bb9259058ba41232162FEC0C48';
     const callbackURL = 'hoanghieusvtool.ngrok.pro/webhook/trello';
     const idModel = '65d98f40df4df16ca1acfa3f';
 
@@ -113,7 +113,7 @@ async function startNgrok() {
 
     const params = {
         key: apiKey,
-        token: token,
+        token: tokenX,
         callbackURL: callbackURL,
         idModel: idModel,
 
